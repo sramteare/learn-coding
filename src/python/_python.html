@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="./lib/brython@3.13.0.min.js"></script>
+  <script src="./lib/brython@3.13.0_stdlib.js"></script>
+  <style>
+    body { 
+      background-color: #333; 
+      margin: 0; /* Remove default body margin */
+      font-family: 'Courier New', Courier, monospace; /* Set base font */
+    }
+
+    #editor-container {
+        display: flex; /* Enable Flexbox */
+        height: calc(100vh - 40px); /* Adjust height as needed, leave space for button */
+    }
+
+    #code-column {
+        flex: 1; /* Take up half the space */
+        display: flex;
+        flex-direction: column; /* Stack editor and button vertically */
+        padding: 10px;
+        background-color: #f5f5f5; /* Light background for code */
+        border-right: 1px solid #ccc; /* Separator */
+    }
+
+     #code-editor-area {
+        display: flex; /* Line numbers and textarea side-by-side */
+        flex-grow: 1; /* Allow this area to grow */
+        overflow: hidden; /* Hide overflow */
+        position: relative; /* Needed for potential absolute positioning later if needed */
+        background-color: #fdfdfd; /* Editor background */
+        border: 1px solid #ccc;
+     }
+     #code-column button { /* Style the button */
+        background-color: #444;
+        color: #eee;
+        border: 1px solid #666;
+        padding: 5px 10px;
+        cursor: pointer;
+        margin-top: 10px; /* Space above button */
+        align-self: flex-start; /* Align button to the left */
+        margin-right: 5px; /* Add some space between buttons */
+    }
+    #line-numbers {
+        padding: 10px 5px 10px 10px; /* Padding */
+        font-size: 1em; /* Match textarea font size */
+        line-height: 1.5; /* Match textarea line height */
+        color: #999; /* Dim color for line numbers */
+        text-align: right;
+        background-color: #eee; /* Slightly different background */
+        border-right: 1px solid #ccc;
+        overflow: hidden; /* Hide overflowing numbers */
+        user-select: none; /* Prevent selecting line numbers */
+        /* Basic height sync - might need JS for perfect sync */
+        height: 100%; 
+        box-sizing: border-box;
+    }
+
+    textarea#code { 
+        flex-grow: 1; /* Take remaining space in the editor area */
+        background-color: transparent; /* Use parent background */
+        color: #333; /* Code text color */
+        border: none; /* Remove default border */
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 1em; /* Consistent font size */
+        line-height: 1.5; /* Control line spacing */
+        padding: 10px; /* Internal padding */
+        margin: 0; /* Remove default margin */
+        resize: none; /* Disable manual resizing */
+        outline: none; /* Remove focus outline */
+        overflow-y: scroll; /* Allow vertical scrolling */
+        white-space: pre; /* Prevent default wrapping */
+        /* Important: Remove wrap="off" from HTML if using white-space: pre */
+        height: 100%; /* Fill the container */
+        box-sizing: border-box;
+    }
+
+    #code-column button { /* Style the button */
+        background-color: #444;
+        color: #eee;
+        border: 1px solid #666;
+        padding: 5px 10px;
+        cursor: pointer;
+        margin-top: 10px; /* Space above button */
+        align-self: flex-start; /* Align button to the left */
+    }
+    #code-column button:hover {
+        background-color: #555;
+    }
+
+
+    #console-column {
+        flex: 1; /* Take up the other half */
+        display: flex; /* Allow console to fill */
+        flex-direction: column;
+    }
+
+    #console {
+      border: none; 
+      /* height: 100%; Remove fixed height, let flexbox handle it */
+      flex-grow: 1; /* Allow console to fill vertical space */
+      overflow-y: scroll;
+      padding: 10px; 
+      background-color: #000000; 
+      color: #00FF00; 
+      font-family: 'Courier New', Courier, monospace; 
+      white-space: pre-wrap; 
+      word-wrap: break-word; 
+      margin: 0; /* Remove potential default margins */
+    }
+    .prompt {
+      color: #00FF00; 
+      font-weight: normal; 
+    }
+    .output {
+      color: #FFFFFF; 
+    }
+    .error {
+      color: #FF0000; 
+    }
+    
+  </style>
+</head>
+<body onload="brython()">
+  <script type="text/python">
+    from browser import document, window, bind, html
+    import sys
+    from io import StringIO
+    import traceback 
+
+    console_div = document['console']
+    code_area = document['code'] # Get code area once
+
+    # --- Configuration ---
+    echo_code_in_console = False # Set to False to disable echoing code
+    # --- End Configuration ---
+
+    def runPython():
+      code = code_area.value # Use the global code_area variable
+
+      # --- Optional: Echo code to console ---
+      if echo_code_in_console:
+          code_lines = code.strip().split('\n')
+          if len(code_lines) == 1:
+              console_div <= html.DIV(f">>> {code_lines[0]}", Class="prompt")
+          else:
+              console_div <= html.DIV(f">>> {code_lines[0]}", Class="prompt")
+              for line in code_lines[1:]:
+                  console_div <= html.DIV(f"... {line}", Class="prompt") # Use '...' for continuation lines
+      # --- End Optional Echo ---
+
+      # Redirect stdout
+      stdout_orig = sys.stdout
+      stderr_orig = sys.stderr
+      captured_output = StringIO()
+      captured_error = StringIO()
+      sys.stdout = captured_output
+      sys.stderr = captured_error
+
+      try:
+        # Execute Python code in the global scope
+        exec(code, globals()) 
+        
+        # Get captured standard output
+        output_text = captured_output.getvalue()
+        if output_text:
+          # Add standard output to the console display
+          for line in output_text.strip().split('\n'):
+              console_div <= html.DIV(line, Class="output")
+
+        # Get captured standard error (might be empty)
+        error_text = captured_error.getvalue()
+        if error_text:
+           # Add standard error to the console display
+           for line in error_text.strip().split('\n'):
+               console_div <= html.DIV(line, Class="error")
+
+      except Exception as e:
+        # Format the traceback for detailed error info
+        exc_info = sys.exc_info()
+        tb_lines = traceback.format_exception(exc_info[0], exc_info[1], exc_info[2])
+        error_message = "".join(tb_lines)
+        # Add error message to the console display
+        for line in error_message.strip().split('\n'):
+            console_div <= html.DIV(line, Class="error")
+      finally:
+        # Restore stdout and stderr
+        sys.stdout = stdout_orig
+        sys.stderr = stderr_orig
+        
+        # Scroll console to the bottom
+        console_div.scrollTop = console_div.scrollHeight
+
+    # Add this function if you want line numbers (see CSS and HTML changes)
+    def update_line_numbers(*args):
+        code_area = document['code']
+        line_numbers_div = document['line-numbers']
+        number_of_lines = code_area.value.count('\n') + 1
+        line_numbers_div.html = '<br>'.join(str(i) for i in range(1, number_of_lines + 1))
+        # Synchronize scroll (basic attempt)
+        line_numbers_div.scrollTop = code_area.scrollTop
+
+    # --- toggleComment function (keep as is) ---
+    def toggleComment(*args):
+        start = code_area.selectionStart
+        end = code_area.selectionEnd
+        text = code_area.value
+
+        # Find the start of the first selected line
+        line_start_pos = text.rfind('\n', 0, start) + 1
+
+        # Find the end of the last selected line
+        line_end_pos = text.find('\n', end)
+        if line_end_pos == -1: # Selection ends on the last line
+            line_end_pos = len(text)
+
+        # Extract the full lines involved
+        selected_block = text[line_start_pos:line_end_pos]
+        lines = selected_block.split('\n')
+
+        # Check if all non-empty lines are already commented
+        all_commented = True
+        if not lines: # Handle empty selection or block
+              all_commented = False
+        else:
+            for line in lines:
+                if line.strip() and not line.startswith('# '):
+                    all_commented = False
+                    break
+        
+        # Build the new lines
+        new_lines = []
+        chars_diff = 0 # Track character difference for selection update
+        
+        if all_commented:
+            # Uncomment: Remove '# ' from lines that have it
+            for line in lines:
+                if line.startswith('# '):
+                    new_lines.append(line[2:])
+                    chars_diff -= 2
+                else:
+                    new_lines.append(line)
+        else:
+            # Comment: Add '# ' to non-empty lines
+            for line in lines:
+                  # Only add comment to non-empty lines
+                  if line.strip():
+                      new_lines.append('# ' + line)
+                      chars_diff += 2
+                  else:
+                      new_lines.append(line) # Keep empty lines as they are
+
+        # Reconstruct the text
+        new_block = '\n'.join(new_lines)
+        code_area.value = text[:line_start_pos] + new_block + text[line_end_pos:]
+
+        # Update selection (basic attempt: select the modified block)
+        code_area.selectionStart = line_start_pos
+        # Adjust end position based on added/removed characters
+        new_end = line_start_pos + len(new_block) 
+        code_area.selectionEnd = new_end
+        
+        # Ensure focus remains on the textarea
+        code_area.focus()
+        
+        # Update line numbers if the function exists
+        if 'update_line_numbers' in globals():
+              update_line_numbers()
+    # --- End of toggleComment function ---
+
+    # --- Add Keydown Handler ---
+    @bind(code_area, 'keydown')
+    def handle_keydown(ev):
+        # Check for Cmd + # (Mac) or Ctrl + # (Windows/Linux)
+        # Note: '#' might require Shift on some keyboards, 
+        # so checking for '#' directly is often better than keycode '3' + shift.
+        if ev.key == '#' and (ev.metaKey or ev.ctrlKey): 
+            ev.preventDefault() # Prevent '#' from being typed
+            toggleComment()     # Call the comment function
+
+    # --- End of Keydown Handler ---
+
+
+    # Bind events to update line numbers (if using)
+    if 'update_line_numbers' in globals():
+        code_area.bind('input', update_line_numbers)
+        code_area.bind('scroll', update_line_numbers)
+        # Initial update
+        update_line_numbers()
+
+    # Expose functions to JavaScript (only runPython needed now)
+    window.runPython = runPython
+  </script>
+
+  <div id="editor-container">
+    <div id="code-column">
+        <div id="code-editor-area">
+            <div id="line-numbers">1</div> <!-- Line numbers div -->
+            <textarea id="code" rows="15" wrap="off">print("Hello from Aloha!") 
+a = 10
+print(f"The value of a is {a}")
+# print(unknown_variable) # Uncomment to test error handling
+for i in range(3):
+  print(f"Loop {i}")
+</textarea>
+        </div>
+        <button onclick="window.runPython()">Run</button>
+    </div>
+    <div id="console-column">
+      <div id="console"></div> 
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Learn Python</title>
+    <style>
+        :root{
+            --button-radius: .65rem;
+            --color-gray-950: oklch(13% .028 261.692);
+        }
+        body { 
+          background-color: var(--color-gray-950); 
+        }
+        #editor-container {
+            position: relative;
+            display: flex; 
+            gap: 1rem;
+            height: calc(100vh - 40px); 
+        }
+        #code-column {
+            flex: 1; 
+            display: flex;
+            flex-direction: column; 
+            gap: .35rem;
+            background-color: #f5f5f5; 
+            border-right: 1px solid #ccc; 
+        }
+        #console-column {
+            flex: 1; 
+            display: flex; 
+            flex-direction: column;
+        }
+        #console {
+          flex-grow: 1; /* Console fills remaining space */
+          overflow-y: scroll;
+          background-color: #000000; 
+          color: #00FF00; 
+          font-family: 'Courier New', Courier, monospace; 
+          white-space: pre-wrap; 
+          word-wrap: break-word; 
+          padding: 1rem; 
+          border: 1px solid #555; /* Optional: Add border to console */
+        }
+        .prompt { color: #00FF00; font-weight: normal; }
+        .output { color: #FFFFFF; }
+        .error { color: #FF0000; }
+
+        /* --- Style the CodeMirror container --- */
+        #editor { /* New ID for the CodeMirror host */
+            flex-grow: 1; /* Allow editor to fill space */
+            overflow: hidden; /* Contain CodeMirror */
+            border: 1px solid #ccc;
+            height: 100%; /* Make sure it fills the flex item */
+        }
+        /* CodeMirror elements often need height */
+        .cm-editor { height: 100%; } 
+
+        /* --- Adjust button styles if needed --- */
+        #code-column button { 
+            background-color: #444;
+            color: #eee;
+            border: 1px solid #666;
+            padding: 5px 10px;
+            cursor: pointer;
+            align-self: flex-start; 
+            border-radius: var(--button-radius);
+            margin-bottom: .5rem;
+            margin-left: .5rem;
+            
+        }
+        #code-column button:hover {
+            background-color: #555;
+        }
+
+        /* Style the button within the console column */
+        #clear-console {
+            position: absolute;
+            z-index: 2;
+            right: 1rem;
+            margin-bottom: .5rem; /* Add space below the button */
+            /* Add other button styles as desired */
+            background-color: #444;
+            color: #eee;
+            border: 1px solid #666;
+            padding: 3px 8px; /* Smaller padding */
+            font-size: 0.8em; /* Smaller font */
+            cursor: pointer;
+            border-radius: var(--button-radius);
+        }
+        #clear-console:hover {
+            background-color: #555;
+        }
+    </style>
+</head>
+<body>
+    
+    <div >
+        
+        <div id="editor-container">
+            <button id="clear-console" onclick="window.clearConsole()">Clear Console</button>
+        <div id="code-column">
+            <!-- Replace textarea and line numbers with this div -->
+            <div id="editor"></div> 
+            <button onclick="window.runCode()">Run</button>
+            <!-- Comment button removed, handled by keymap -->
+        </div>
+        <div id="console-column">
+          <div id="console"></div> 
+        </div>
+        </div>
+    </div>
+    
+    <script type="module" src="./editor_setup.js"></script> 
+
+</body>
+</html>
